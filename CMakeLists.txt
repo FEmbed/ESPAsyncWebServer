@@ -1,17 +1,26 @@
-set(COMPONENT_SRCDIRS
-    "src"
+idf_build_get_property(components_to_build BUILD_COMPONENTS)
+
+set(src)
+set(include)
+set(priv_requires)
+
+set(srcs    
+        "src/AsyncEventSource.cpp"
+        "src/AsyncWebSocket.cpp"
+        "src/SPIFFSEditor.cpp"
+        "src/WebAuthentication.cpp"
+        "src/WebHandlers.cpp"
+        "src/WebRequest.cpp"
+        "src/WebResponses.cpp"
+        "src/WebServer.cpp"
 )
 
-set(COMPONENT_ADD_INCLUDEDIRS
-    "src"
-)
+set(include "src" 
+            )
 
-set(COMPONENT_REQUIRES
-    "arduino-esp32"
-    "AsyncTCP"
-)
+idf_component_register(SRCS "${srcs}"
+    INCLUDE_DIRS ${include}
+    REQUIRES "FEmbed-Arduino FEmbed-OS FEmbed-FS FEmbed-WiFi AsyncTCP"
+    PRIV_REQUIRES ${priv_requires})
 
-register_component()
-
-target_compile_definitions(${COMPONENT_TARGET} PUBLIC -DESP32)
-target_compile_options(${COMPONENT_TARGET} PRIVATE -fno-rtti)
+target_compile_options(${COMPONENT_LIB} PRIVATE -fno-rtti -DESP32)
