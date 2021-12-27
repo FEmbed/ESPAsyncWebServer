@@ -2,18 +2,19 @@
 #define SPIFFSEditor_H_
 #include <ESPAsyncWebServer.h>
 
+using File = std::shared_ptr<FEmbed::File>;
 class SPIFFSEditor: public AsyncWebHandler {
   private:
-    fs::FS _fs;
+    FEmbed::FileSystem _fs;
     String _username;
     String _password; 
     bool _authenticated;
     uint32_t _startTime;
   public:
 #ifdef ESP32
-    SPIFFSEditor(const fs::FS& fs, const String& username=String(), const String& password=String());
+    SPIFFSEditor(const FEmbed::FileSystem& fs, const String& username=String(), const String& password=String());
 #else
-    SPIFFSEditor(const String& username=String(), const String& password=String(), const fs::FS& fs=SPIFFS);
+    SPIFFSEditor(const String& username=String(), const String& password=String(), const FEmbed::FileSystem& fs=SPIFFS);
 #endif
     virtual bool canHandle(AsyncWebServerRequest *request) override final;
     virtual void handleRequest(AsyncWebServerRequest *request) override final;

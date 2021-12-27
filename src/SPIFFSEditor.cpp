@@ -1,5 +1,6 @@
 #include "SPIFFSEditor.h"
-#include <FS.h>
+#include <feFS.h>
+using FileSystem = FEmbed::FileSystem;
 
 //File: edit.htm.gz, Size: 4151
 #define edit_htm_gz_len 4151
@@ -318,28 +319,28 @@ static bool addExclude(const char *item){
     return true;
 }
 
-static void loadExcludeList(fs::FS &_fs, const char *filename){
+static void loadExcludeList(FileSystem &_fs, const char *filename){
     static char linebuf[SPIFFS_MAXLENGTH_FILEPATH];
-    fs::File excludeFile=_fs.open(filename, "r");
+    File excludeFile=_fs.open(filename);
     if(!excludeFile){
         //addExclude("/*.js.gz");
         return;
     }
 #ifdef ESP32
-    if(excludeFile.isDirectory()){
-      excludeFile.close();
+    if(excludeFile->isDirectory()){
+      excludeFile->close();
       return;
     }
 #endif
-    if (excludeFile.size() > 0){
+    if (excludeFile->size() > 0){
       uint8_t idx;
       bool isOverflowed = false;
-      while (excludeFile.available()){
+      while (excludeFile->available()){
         linebuf[0] = '\0';
         idx = 0;
         int lastChar;
         do {
-          lastChar = excludeFile.read();
+          lastChar = excludeFile->read();
           if(lastChar != '\r'){
             linebuf[idx++] = (char) lastChar;
           }
@@ -352,15 +353,15 @@ static void loadExcludeList(fs::FS &_fs, const char *filename){
         isOverflowed = (idx >= SPIFFS_MAXLENGTH_FILEPATH);
         linebuf[idx-1] = '\0';
         if(!addExclude(linebuf)){
-            excludeFile.close();
+            excludeFile->close();
             return;
         }
       }
     }
-    excludeFile.close();
+    excludeFile->close();
 }
 
-static bool isExcluded(fs::FS &_fs, const char *filename) {
+static bool isExcluded(FileSystem &_fs, const char *filename) {
   if(excludes == NULL){
       loadExcludeList(_fs, excludeListFile);
   }
@@ -377,9 +378,9 @@ static bool isExcluded(fs::FS &_fs, const char *filename) {
 // WEB HANDLER IMPLEMENTATION
 
 #ifdef ESP32
-SPIFFSEditor::SPIFFSEditor(const fs::FS& fs, const String& username, const String& password)
+SPIFFSEditor::SPIFFSEditor(const FileSystem& fs, const String& username, const String& password)
 #else
-SPIFFSEditor::SPIFFSEditor(const String& username, const String& password, const fs::FS& fs)
+SPIFFSEditor::SPIFFSEditor(const String& username, const String& password, const FileSystem& fs)
 #endif
 :_fs(fs)
 ,_username(username)
@@ -394,25 +395,25 @@ bool SPIFFSEditor::canHandle(AsyncWebServerRequest *request){
       if(request->hasParam("list"))
         return true;
       if(request->hasParam("edit")){
-        request->_tempFile = _fs.open(request->arg("edit"), "r");
+        request->_tempFile = _fs.open(request->arg("edit"));
         if(!request->_tempFile){
           return false;
         }
 #ifdef ESP32
-        if(request->_tempFile.isDirectory()){
-          request->_tempFile.close();
+        if(request->_tempFile->isDirectory()){
+          request->_tempFile->close();
           return false;
         }
 #endif
       }
       if(request->hasParam("download")){
-        request->_tempFile = _fs.open(request->arg("download"), "r");
+        request->_tempFile = _fs.open(request->arg("download"));
         if(!request->_tempFile){
           return false;
         }
 #ifdef ESP32
-        if(request->_tempFile.isDirectory()){
-          request->_tempFile.close();
+        if(request->_tempFile->isDirectory()){
+          request->_tempFile->close();
           return false;
         }
 #endif
@@ -447,15 +448,15 @@ void SPIFFSEditor::handleRequest(AsyncWebServerRequest *request){
       path = String();
       String output = "[";
 #ifdef ESP32
-      File entry = dir.openNextFile();
+      File entry = dir->openNextFile();
       while(entry){
 #else
-      while(dir.next()){
-        fs::File entry = dir.openFile("r");
+      while(dir->next()){
+        File entry = dir->openFile("r");
 #endif
-        if (isExcluded(_fs, entry.name())) {
+        if (isExcluded(_fs, entry->name())) {
 #ifdef ESP32
-            entry = dir.openNextFile();
+            entry = dir->openNextFile();
 #endif
             continue;
         }
@@ -463,25 +464,25 @@ void SPIFFSEditor::handleRequest(AsyncWebServerRequest *request){
         output += "{\"type\":\"";
         output += "file";
         output += "\",\"name\":\"";
-        output += String(entry.name());
+        output += String(entry->name());
         output += "\",\"size\":";
-        output += String(entry.size());
+        output += String(entry->size());
         output += "}";
 #ifdef ESP32
-        entry = dir.openNextFile();
+        entry = dir->openNextFile();
 #else
-        entry.close();
+        entry->close();
 #endif
       }
 #ifdef ESP32
-      dir.close();
+      dir->close();
 #endif
       output += "]";
       request->send(200, "application/json", output);
       output = String();
     }
     else if(request->hasParam("edit") || request->hasParam("download")){
-      request->send(request->_tempFile, request->_tempFile.name(), String(), request->hasParam("download"));
+      request->send(request->_tempFile, request->_tempFile->name(), String(), request->hasParam("download"));
     }
     else {
       const char * buildTime = __DATE__ " " __TIME__ " GMT";
@@ -511,10 +512,10 @@ void SPIFFSEditor::handleRequest(AsyncWebServerRequest *request){
       if(_fs.exists(filename)){
         request->send(200);
       } else {
-        fs::File f = _fs.open(filename, "w");
+        File f = _fs.open(filename, FEmbed::FM_WRONLY);
         if(f){
-          f.write((uint8_t)0x00);
-          f.close();
+          f->write((uint8_t)0x00);
+          f->close();
           request->send(200, "", "CREATE: "+filename);
         } else {
           request->send(500);
@@ -529,16 +530,16 @@ void SPIFFSEditor::handleUpload(AsyncWebServerRequest *request, const String& fi
   if(!index){
     if(!_username.length() || request->authenticate(_username.c_str(),_password.c_str())){
       _authenticated = true;
-      request->_tempFile = _fs.open(filename, "w");
+      request->_tempFile = _fs.open(filename, FEmbed::FM_WRONLY);
       _startTime = millis();
     }
   }
   if(_authenticated && request->_tempFile){
     if(len){
-      request->_tempFile.write(data,len);
+      request->_tempFile->write(data,len);
     }
     if(final){
-      request->_tempFile.close();
+      request->_tempFile->close();
     }
   }
 }

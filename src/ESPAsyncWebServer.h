@@ -24,7 +24,8 @@
 #include "Arduino.h"
 
 #include <functional>
-#include "FS.h"
+#include "feFS.h"
+#include "feFile.h"
 
 #include "StringArray.h"
 
@@ -132,8 +133,8 @@ typedef std::function<size_t(uint8_t*, size_t, size_t)> AwsResponseFiller;
 typedef std::function<String(const String&)> AwsTemplateProcessor;
 
 class AsyncWebServerRequest {
-  using File = fs::File;
-  using FS = fs::FS;
+  using File = std::shared_ptr<FEmbed::File>;
+  using FS = FEmbed::FileSystem;
   friend class AsyncWebServer;
   friend class AsyncCallbackWebHandler;
   private:
@@ -425,7 +426,7 @@ class AsyncWebServer {
     AsyncCallbackWebHandler& on(const char* uri, WebRequestMethodComposite method, ArRequestHandlerFunction onRequest, ArUploadHandlerFunction onUpload);
     AsyncCallbackWebHandler& on(const char* uri, WebRequestMethodComposite method, ArRequestHandlerFunction onRequest, ArUploadHandlerFunction onUpload, ArBodyHandlerFunction onBody);
 
-    AsyncStaticWebHandler& serveStatic(const char* uri, fs::FS& fs, const char* path, const char* cache_control = NULL);
+    AsyncStaticWebHandler& serveStatic(const char* uri, FEmbed::FileSystem& fs, const char* path, const char* cache_control = NULL);
 
     void onNotFound(ArRequestHandlerFunction fn);  //called when handler is not assigned
     void onFileUpload(ArUploadHandlerFunction fn); //handle file uploads

@@ -129,7 +129,7 @@ bool AsyncStaticWebHandler::_getFile(AsyncWebServerRequest *request)
 }
 
 #ifdef ESP32
-#define FILE_IS_REAL(f) (f == true && !f.isDirectory())
+#define FILE_IS_REAL(f) (f != nullptr && !f->isDirectory())
 #else
 #define FILE_IS_REAL(f) (f == true)
 #endif
@@ -142,17 +142,17 @@ bool AsyncStaticWebHandler::_fileExists(AsyncWebServerRequest *request, const St
   String gzip = path + ".gz";
 
   if (_gzipFirst) {
-    request->_tempFile = _fs.open(gzip, "r");
+    request->_tempFile = _fs.open(gzip);
     gzipFound = FILE_IS_REAL(request->_tempFile);
     if (!gzipFound){
-      request->_tempFile = _fs.open(path, "r");
+      request->_tempFile = _fs.open(path);
       fileFound = FILE_IS_REAL(request->_tempFile);
     }
   } else {
-    request->_tempFile = _fs.open(path, "r");
+    request->_tempFile = _fs.open(path);
     fileFound = FILE_IS_REAL(request->_tempFile);
     if (!fileFound){
-      request->_tempFile = _fs.open(gzip, "r");
+      request->_tempFile = _fs.open(gzip);
       gzipFound = FILE_IS_REAL(request->_tempFile);
     }
   }
@@ -193,13 +193,13 @@ void AsyncStaticWebHandler::handleRequest(AsyncWebServerRequest *request)
   if((_username != "" && _password != "") && !request->authenticate(_username.c_str(), _password.c_str()))
       return request->requestAuthentication();
 
-  if (request->_tempFile == true) {
-    String etag = String(request->_tempFile.size());
+  if (request->_tempFile != nullptr) {
+    String etag = String(request->_tempFile->size());
     if (_last_modified.length() && _last_modified == request->header("If-Modified-Since")) {
-      request->_tempFile.close();
+      request->_tempFile->close();
       request->send(304); // Not modified
     } else if (_cache_control.length() && request->hasHeader("If-None-Match") && request->header("If-None-Match").equals(etag)) {
-      request->_tempFile.close();
+      request->_tempFile->close();
       AsyncWebServerResponse * response = new AsyncBasicResponse(304); // Not modified
       response->addHeader("Cache-Control", _cache_control);
       response->addHeader("ETag", etag);

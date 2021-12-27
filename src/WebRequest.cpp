@@ -94,7 +94,7 @@ AsyncWebServerRequest::~AsyncWebServerRequest(){
   }
 
   if(_tempFile){
-    _tempFile.close();
+    _tempFile->close();
   }
 }
 
@@ -737,7 +737,7 @@ AsyncWebServerResponse * AsyncWebServerRequest::beginResponse(FS &fs, const Stri
 }
 
 AsyncWebServerResponse * AsyncWebServerRequest::beginResponse(File content, const String& path, const String& contentType, bool download, AwsTemplateProcessor callback){
-  if(content == true)
+  if(content)
     return new AsyncFileResponse(content, path, contentType, download, callback);
   return NULL;
 }
@@ -779,7 +779,7 @@ void AsyncWebServerRequest::send(FS &fs, const String& path, const String& conte
 }
 
 void AsyncWebServerRequest::send(File content, const String& path, const String& contentType, bool download, AwsTemplateProcessor callback){
-  if(content == true){
+  if(content){
     send(beginResponse(content, path, contentType, download, callback));
   } else send(404);
 }

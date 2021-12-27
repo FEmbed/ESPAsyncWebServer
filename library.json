@@ -28,6 +28,10 @@
     {
       "name": "Hash",
       "platforms": "espressif8266"
+    },
+    {
+      "name": "FEmbed-FS",
+      "platforms": "espressif32"
     }
   ]
 }

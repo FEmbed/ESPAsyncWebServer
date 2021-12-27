@@ -22,6 +22,7 @@
 #include "WebResponseImpl.h"
 #include "cbuf.h"
 
+#if defined(ESP8266)
 // Since ESP8266 does not link memchr by default, here's its implementation.
 void* memchr(void* ptr, int ch, size_t count)
 {
@@ -31,7 +32,7 @@ void* memchr(void* ptr, int ch, size_t count)
       return --p;
   return nullptr;
 }
-
+#endif
 
 /*
  * Abstract Response
@@ -388,8 +389,8 @@ size_t AsyncAbstractResponse::_fillBufferAndProcessTemplates(uint8_t* data, size
   // Now we've read 'len' bytes, either from cache or from file
   // Search for template placeholders
   uint8_t* pTemplateStart = data;
-  while((pTemplateStart < &data[len]) && (pTemplateStart = (uint8_t*)memchr(pTemplateStart, TEMPLATE_PLACEHOLDER, &data[len - 1] - pTemplateStart + 1))) { // data[0] ... data[len - 1]
-    uint8_t* pTemplateEnd = (pTemplateStart < &data[len - 1]) ? (uint8_t*)memchr(pTemplateStart + 1, TEMPLATE_PLACEHOLDER, &data[len - 1] - pTemplateStart) : nullptr;
+  while((pTemplateStart < &data[len]) && (pTemplateStart = (uint8_t*)memchr((void *)pTemplateStart, (int)TEMPLATE_PLACEHOLDER, (size_t)(&data[len - 1] - pTemplateStart + 1)))) { // data[0] ... data[len - 1]
+    uint8_t* pTemplateEnd = (pTemplateStart < &data[len - 1]) ? (uint8_t*)memchr((void *)(pTemplateStart + 1), (int)TEMPLATE_PLACEHOLDER, (size_t)(&data[len - 1] - pTemplateStart)) : nullptr;
     // temporary buffer to hold parameter name
     uint8_t buf[TEMPLATE_PARAM_NAME_LENGTH + 1];
     String paramName;
@@ -479,7 +480,7 @@ size_t AsyncAbstractResponse::_fillBufferAndProcessTemplates(uint8_t* data, size
 
 AsyncFileResponse::~AsyncFileResponse(){
   if(_content)
-    _content.close();
+    _content->close();
 }
 
 void AsyncFileResponse::_setContentType(const String& path){
@@ -516,8 +517,8 @@ AsyncFileResponse::AsyncFileResponse(FS &fs, const String& path, const String& c
     _chunked = false;
   }
 
-  _content = fs.open(_path, "r");
-  _contentLength = _content.size();
+  _content = fs.open(_path);
+  _contentLength = _content->size();
 
   if(contentType == "")
     _setContentType(path);
@@ -542,7 +543,7 @@ AsyncFileResponse::AsyncFileResponse(File content, const String& path, const Str
   _code = 200;
   _path = path;
 
-  if(!download && String(content.name()).endsWith(".gz") && !path.endsWith(".gz")){
+  if(!download && String(content->name()).endsWith(".gz") && !path.endsWith(".gz")){
     addHeader("Content-Encoding", "gzip");
     _callback = nullptr; // Unable to process gzipped templates
     _sendContentLength = true;
@@ -550,7 +551,7 @@ AsyncFileResponse::AsyncFileResponse(File content, const String& path, const Str
   }
 
   _content = content;
-  _contentLength = _content.size();
+  _contentLength = _content->size();
 
   if(contentType == "")
     _setContentType(path);
@@ -570,7 +571,7 @@ AsyncFileResponse::AsyncFileResponse(File content, const String& path, const Str
 }
 
 size_t AsyncFileResponse::_fillBuffer(uint8_t *data, size_t len){
-  return _content.read(data, len);
+  return _content->read(data, len);
 }
 
 /*

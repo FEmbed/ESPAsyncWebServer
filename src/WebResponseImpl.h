@@ -65,8 +65,8 @@ class AsyncAbstractResponse: public AsyncWebServerResponse {
 
 #define TEMPLATE_PARAM_NAME_LENGTH 32
 class AsyncFileResponse: public AsyncAbstractResponse {
-  using File = fs::File;
-  using FS = fs::FS;
+  using File = std::shared_ptr<FEmbed::File>;
+  using FS = FEmbed::FileSystem;
   private:
     File _content;
     String _path;
@@ -75,7 +75,7 @@ class AsyncFileResponse: public AsyncAbstractResponse {
     AsyncFileResponse(FS &fs, const String& path, const String& contentType=String(), bool download=false, AwsTemplateProcessor callback=nullptr);
     AsyncFileResponse(File content, const String& path, const String& contentType=String(), bool download=false, AwsTemplateProcessor callback=nullptr);
     ~AsyncFileResponse();
-    bool _sourceValid() const { return !!(_content); }
+    bool _sourceValid() const { return (_content != nullptr); }
     virtual size_t _fillBuffer(uint8_t *buf, size_t maxLen) override;
 };
 

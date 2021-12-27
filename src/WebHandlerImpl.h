@@ -30,8 +30,8 @@
 #include <time.h>
 
 class AsyncStaticWebHandler: public AsyncWebHandler {
-   using File = fs::File;
-   using FS = fs::FS;
+   using File = std::shared_ptr<FEmbed::File>;
+   using FS = FEmbed::FileSystem;
   private:
     bool _getFile(AsyncWebServerRequest *request);
     bool _fileExists(AsyncWebServerRequest *request, const String& path);
