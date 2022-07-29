@@ -35,8 +35,8 @@ enum { PARSE_REQ_START, PARSE_REQ_HEADERS, PARSE_REQ_BODY, PARSE_REQ_END, PARSE_
 AsyncWebServerRequest::AsyncWebServerRequest(AsyncWebServer* s, AsyncClient* c)
   : _client(c)
   , _server(s)
-  , _handler(NULL)
-  , _response(NULL)
+  , _handler(nullptr)
+  , _response(nullptr)
   , _temp()
   , _parseState(0)
   , _version(0)
@@ -64,10 +64,10 @@ AsyncWebServerRequest::AsyncWebServerRequest(AsyncWebServer* s, AsyncClient* c)
   , _itemFilename()
   , _itemType()
   , _itemValue()
-  , _itemBuffer(0)
+  , _itemBuffer(nullptr)
   , _itemBufferIndex(0)
   , _itemIsFile(false)
-  , _tempObject(NULL)
+  , _tempObject(nullptr)
 {
   c->onError([](void *r, AsyncClient* c, int8_t error){ (void)c; AsyncWebServerRequest *req = (AsyncWebServerRequest*)r; req->_onError(error); }, this);
   c->onAck([](void *r, AsyncClient* c, size_t len, uint32_t time){ (void)c; AsyncWebServerRequest *req = (AsyncWebServerRequest*)r; req->_onAck(len, time); }, this);
@@ -85,11 +85,11 @@ AsyncWebServerRequest::~AsyncWebServerRequest(){
 
   _interestingHeaders.free();
 
-  if(_response != NULL){
+  if(_response != nullptr){
     delete _response;
   }
 
-  if(_tempObject != NULL){
+  if(_tempObject != nullptr){
     free(_tempObject);
   }
 
@@ -130,7 +130,7 @@ void AsyncWebServerRequest::_onData(void *buf, size_t len){
     }
   } else if(_parseState == PARSE_REQ_BODY){
     // A handler should be already attached at this point in _parseLine function.
-    // If handler does nothing (_onRequest is NULL), we don't need to really parse the body.
+    // If handler does nothing (_onRequest is nullptr), we don't need to really parse the body.
     const bool needParse = _handler && !_handler->isRequestHandlerTrivial();
     if(_isMultipart){
       if(needParse){
@@ -180,28 +180,30 @@ void AsyncWebServerRequest::_onData(void *buf, size_t len){
 
 void AsyncWebServerRequest::_removeNotInterestingHeaders(){
   if (_interestingHeaders.containsIgnoreCase("ANY")) return; // nothing to do
-  for(const auto& header: _headers){
-      if(!_interestingHeaders.containsIgnoreCase(header->name().c_str())){
-        _headers.remove(header);
+  for(const auto& header: _headers) {
+      if (header) {
+          if (!_interestingHeaders.containsIgnoreCase(header->name().c_str())) {
+              _headers.remove(header);
+          }
       }
   }
 }
 
 void AsyncWebServerRequest::_onPoll(){
   //os_printf("p\n");
-  if(_response != NULL && _client != NULL && _client->canSend() && !_response->_finished()){
+  if(_response != nullptr && _client != nullptr && _client->canSend() && !_response->_finished()){
     _response->_ack(this, 0, 0);
   }
 }
 
 void AsyncWebServerRequest::_onAck(size_t len, uint32_t time){
   //os_printf("a:%u:%u\n", len, time);
-  if(_response != NULL){
+  if(_response != nullptr){
     if(!_response->_finished()){
       _response->_ack(this, len, time);
     } else {
       AsyncWebServerResponse* r = _response;
-      _response = NULL;
+      _response = nullptr;
       delete r;
     }
   }
@@ -467,7 +469,7 @@ void AsyncWebServerRequest::_parseMultipartPostByte(uint8_t data, bool last){
           if(_itemBuffer)
             free(_itemBuffer);
           _itemBuffer = (uint8_t*)malloc(1460);
-          if(_itemBuffer == NULL){
+          if(_itemBuffer == nullptr){
             _multiParseState = PARSE_ERROR;
             return;
           }
@@ -517,7 +519,7 @@ void AsyncWebServerRequest::_parseMultipartPostByte(uint8_t data, bool last){
           _addParam(new AsyncWebParameter(_itemName, _itemFilename, true, true, _itemSize));
         }
         free(_itemBuffer);
-        _itemBuffer = NULL;
+        _itemBuffer = nullptr;
       }
 
     } else {
@@ -710,14 +712,14 @@ void AsyncWebServerRequest::addInterestingHeader(const String& name){
 
 void AsyncWebServerRequest::send(AsyncWebServerResponse *response){
   _response = response;
-  if(_response == NULL){
+  if(_response == nullptr){
     _client->close(true);
     _onDisconnect();
     return;
   }
   if(!_response->_sourceValid()){
     delete response;
-    _response = NULL;
+    _response = nullptr;
     send(500);
   }
   else {
@@ -733,13 +735,13 @@ AsyncWebServerResponse * AsyncWebServerRequest::beginResponse(int code, const St
 AsyncWebServerResponse * AsyncWebServerRequest::beginResponse(FS &fs, const String& path, const String& contentType, bool download, AwsTemplateProcessor callback){
   if(fs.exists(path) || (!download && fs.exists(path+".gz")))
     return new AsyncFileResponse(fs, path, contentType, download, callback);
-  return NULL;
+  return nullptr;
 }
 
 AsyncWebServerResponse * AsyncWebServerRequest::beginResponse(File content, const String& path, const String& contentType, bool download, AwsTemplateProcessor callback){
   if(content)
     return new AsyncFileResponse(content, path, contentType, download, callback);
-  return NULL;
+  return nullptr;
 }
 
 AsyncWebServerResponse * AsyncWebServerRequest::beginResponse(Stream &stream, const String& contentType, size_t len, AwsTemplateProcessor callback){
@@ -813,7 +815,7 @@ void AsyncWebServerRequest::redirect(const String& url){
 bool AsyncWebServerRequest::authenticate(const char * username, const char * password, const char * realm, bool passwordIsHash){
   if(_authorization.length()){
     if(_isDigest)
-      return checkDigestAuthentication(_authorization.c_str(), methodToString(), username, password, realm, passwordIsHash, NULL, NULL, NULL);
+      return checkDigestAuthentication(_authorization.c_str(), methodToString(), username, password, realm, passwordIsHash, nullptr, nullptr, nullptr);
     else if(!passwordIsHash)
       return checkBasicAuthentication(_authorization.c_str(), username, password);
     else
@@ -823,7 +825,7 @@ bool AsyncWebServerRequest::authenticate(const char * username, const char * pas
 }
 
 bool AsyncWebServerRequest::authenticate(const char * hash){
-  if(!_authorization.length() || hash == NULL)
+  if(!_authorization.length() || hash == nullptr)
     return false;
 
   if(_isDigest){
@@ -838,7 +840,7 @@ bool AsyncWebServerRequest::authenticate(const char * hash){
       return false;
     String realm = hStr.substring(0, separator);
     hStr = hStr.substring(separator + 1);
-    return checkDigestAuthentication(_authorization.c_str(), methodToString(), username.c_str(), hStr.c_str(), realm.c_str(), true, NULL, NULL, NULL);
+    return checkDigestAuthentication(_authorization.c_str(), methodToString(), username.c_str(), hStr.c_str(), realm.c_str(), true, nullptr, nullptr, nullptr);
   }
 
   return (_authorization.equals(hash));
@@ -846,7 +848,7 @@ bool AsyncWebServerRequest::authenticate(const char * hash){
 
 void AsyncWebServerRequest::requestAuthentication(const char * realm, bool isDigest){
   AsyncWebServerResponse * r = beginResponse(401);
-  if(!isDigest && realm == NULL){
+  if(!isDigest && realm == nullptr){
     r->addHeader("WWW-Authenticate", "Basic realm=\"Login Required\"");
   } else if(!isDigest){
     String header = "Basic realm=\"";
@@ -964,7 +966,7 @@ String AsyncWebServerRequest::urlDecode(const String& text) const {
     if ((encodedChar == '%') && (i + 1 < len)){
       temp[2] = text.charAt(i++);
       temp[3] = text.charAt(i++);
-      decodedChar = strtol(temp, NULL, 16);
+      decodedChar = strtol(temp, nullptr, 16);
     } else if (encodedChar == '+') {
       decodedChar = ' ';
     } else {

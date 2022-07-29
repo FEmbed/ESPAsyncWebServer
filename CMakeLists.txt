@@ -23,4 +23,5 @@ idf_component_register(SRCS "${srcs}"
     REQUIRES "FEmbed-Arduino FEmbed-OS FEmbed-FS FEmbed-WiFi AsyncTCP"
     PRIV_REQUIRES ${priv_requires})
 
-target_compile_options(${COMPONENT_LIB} PRIVATE -fno-rtti -DESP32)
+target_compile_options(${COMPONENT_LIB} PRIVATE -fno-rtti)
+target_compile_definitions(${COMPONENT_TARGET} PUBLIC -DESP32)
