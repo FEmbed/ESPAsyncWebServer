@@ -385,6 +385,7 @@ class AsyncWebServerResponse {
     virtual bool _sourceValid() const;
     virtual void _respond(AsyncWebServerRequest *request);
     virtual size_t _ack(AsyncWebServerRequest *request, size_t len, uint32_t time);
+    static String getContentTypeFromPath(const String& path);
 };
 
 /*

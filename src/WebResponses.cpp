@@ -164,6 +164,30 @@ bool AsyncWebServerResponse::_sourceValid() const { return false; }
 void AsyncWebServerResponse::_respond(AsyncWebServerRequest *request){ _state = RESPONSE_END; request->client()->close(); }
 size_t AsyncWebServerResponse::_ack(AsyncWebServerRequest *request, size_t len, uint32_t time){ (void)request; (void)len; (void)time; return 0; }
 
+String AsyncWebServerResponse::getContentTypeFromPath(const String& path)
+{
+    String contentType = "text/plain";
+    if (path.endsWith(".html")) contentType = "text/html";
+    else if (path.endsWith(".htm")) contentType = "text/html";
+    else if (path.endsWith(".css")) contentType = "text/css";
+    else if (path.endsWith(".json")) contentType = "application/json";
+    else if (path.endsWith(".js")) contentType = "application/javascript";
+    else if (path.endsWith(".png")) contentType = "image/png";
+    else if (path.endsWith(".gif")) contentType = "image/gif";
+    else if (path.endsWith(".jpg")) contentType = "image/jpeg";
+    else if (path.endsWith(".ico")) contentType = "image/x-icon";
+    else if (path.endsWith(".svg")) contentType = "image/svg+xml";
+    else if (path.endsWith(".eot")) contentType = "font/eot";
+    else if (path.endsWith(".woff")) contentType = "font/woff";
+    else if (path.endsWith(".woff2")) contentType = "font/woff2";
+    else if (path.endsWith(".ttf")) contentType = "font/ttf";
+    else if (path.endsWith(".xml")) contentType = "text/xml";
+    else if (path.endsWith(".pdf")) contentType = "application/pdf";
+    else if (path.endsWith(".zip")) contentType = "application/zip";
+    else if(path.endsWith(".gz")) contentType = "application/x-gzip";
+    return contentType;
+}
+
 /*
  * String/Code Response
  * */
@@ -484,25 +508,7 @@ AsyncFileResponse::~AsyncFileResponse(){
 }
 
 void AsyncFileResponse::_setContentType(const String& path){
-  if (path.endsWith(".html")) _contentType = "text/html";
-  else if (path.endsWith(".htm")) _contentType = "text/html";
-  else if (path.endsWith(".css")) _contentType = "text/css";
-  else if (path.endsWith(".json")) _contentType = "application/json";
-  else if (path.endsWith(".js")) _contentType = "application/javascript";
-  else if (path.endsWith(".png")) _contentType = "image/png";
-  else if (path.endsWith(".gif")) _contentType = "image/gif";
-  else if (path.endsWith(".jpg")) _contentType = "image/jpeg";
-  else if (path.endsWith(".ico")) _contentType = "image/x-icon";
-  else if (path.endsWith(".svg")) _contentType = "image/svg+xml";
-  else if (path.endsWith(".eot")) _contentType = "font/eot";
-  else if (path.endsWith(".woff")) _contentType = "font/woff";
-  else if (path.endsWith(".woff2")) _contentType = "font/woff2";
-  else if (path.endsWith(".ttf")) _contentType = "font/ttf";
-  else if (path.endsWith(".xml")) _contentType = "text/xml";
-  else if (path.endsWith(".pdf")) _contentType = "application/pdf";
-  else if (path.endsWith(".zip")) _contentType = "application/zip";
-  else if(path.endsWith(".gz")) _contentType = "application/x-gzip";
-  else _contentType = "text/plain";
+    _contentType = getContentTypeFromPath(path);
 }
 
 AsyncFileResponse::AsyncFileResponse(FS &fs, const String& path, const String& contentType, bool download, AwsTemplateProcessor callback): AsyncAbstractResponse(callback){
