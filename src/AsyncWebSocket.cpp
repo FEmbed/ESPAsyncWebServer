@@ -22,6 +22,7 @@
 #include "AsyncWebSocket.h"
 
 #include <libb64/cencode.h>
+#include <rom/ets_sys.h>
 
 #ifndef ESP8266
 extern "C" {
@@ -840,7 +841,7 @@ void AsyncWebSocketClient::binary(AsyncWebSocketMessageBuffer * buffer)
 
 IPAddress AsyncWebSocketClient::remoteIP() {
     if(!_client) {
-        return IPAddress(0U);
+        return IPAddress((uint32_t)0U);
     }
     return _client->remoteIP();
 }
